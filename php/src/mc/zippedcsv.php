@@ -20,7 +20,7 @@ class ZippedCsv {
             'author' => '',
             'createdAt' => '',
             'updatedAt' => '',
-            'delimiter' => ',',
+            'delimiter' => ';',
             'quoteChar' => '"',
             'hasHeader' => true,
         ];
