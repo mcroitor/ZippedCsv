@@ -45,10 +45,10 @@ class ZippedCsv {
             $normalized[$key] = $value;
         }
 
-        if (mb_strlen($normalized['delimiter']) !== 1) {
+        if (strlen($normalized['delimiter']) !== 1) {
             $normalized['delimiter'] = $this->GetDefaultMetadata()['delimiter'];
         }
-        if (mb_strlen($normalized['quoteChar']) !== 1) {
+        if (strlen($normalized['quoteChar']) !== 1) {
             $normalized['quoteChar'] = $this->GetDefaultMetadata()['quoteChar'];
         }
 
