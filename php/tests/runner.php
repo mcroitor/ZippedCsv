@@ -27,4 +27,5 @@ include_once __DIR__ . '/../src/mc/zippedcsv.php';
 
 // tests
 
+include_once __DIR__ . '/tests_csv.php';
 include_once __DIR__ . '/tests_zippedcsv.php';

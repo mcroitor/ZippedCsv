@@ -24,6 +24,9 @@ $csv = new Csv([
 
 $zcsv->AddCsv("sample.csv", $csv);
 
+// You can pass table name with or without ".csv" extension.
+// AddCsv("sample", $csv) and AddCsv("sample.csv", $csv) are equivalent.
+
 $zcsv->Save();
 $zcsv->Close();
 ```
@@ -36,6 +39,8 @@ use \mc\ZippedCsv;
 $zcsv = new ZippedCsv('zipped_csv_file.zcsv');
 
 $csvFiles = $zcsv->GetTableNames();
+
+// Table names returned by GetTableNames() are normalized (without ".csv" extension).
 
 foreach ($csvFiles as $csvFile) {
     $csv = $zcsv->GetCsv($csvFile);
@@ -265,7 +270,7 @@ class ZippedCsv {
 
     /**
      * Add a Csv object to the zip file
-     * @param string $fileName
+        * @param string $fileName table name, with or without ".csv" extension
      * @param Csv $csv
      */
     public function AddCsv(string $fileName, Csv $csv);
