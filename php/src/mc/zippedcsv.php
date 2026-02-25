@@ -62,7 +62,7 @@ class ZippedCsv {
     }
 
     private function NormalizeFileName(string $fileName): string {
-        return preg_match('/\.csv$/', $fileName) ? $fileName : $fileName . '.csv';
+        return preg_match('/\.csv$/i', $fileName) ? $fileName : $fileName . '.csv';
     }
 
     /**
