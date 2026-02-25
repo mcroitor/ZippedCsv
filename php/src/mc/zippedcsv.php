@@ -65,6 +65,10 @@ class ZippedCsv {
      * @param Csv $csv
      */
     public function AddCsv(string $fileName, Csv $csv) {
+        // if last 4 characters of the file name are .csv remove them
+        if (preg_match('/\.csv$/', $fileName)) {
+            $fileName = preg_replace('/\.csv$/', '', $fileName);
+        }
         $this->csv[$fileName] = $csv;
     }
 
