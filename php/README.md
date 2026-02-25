@@ -39,8 +39,8 @@ use \mc\ZippedCsv;
 $zcsv = new ZippedCsv('zipped_csv_file.zcsv');
 
 $csvFiles = $zcsv->GetTableNames();
-
-// Table names returned by GetTableNames() are normalized (without ".csv" extension).
+// Table names returned by GetTableNames() preserve the names stored in archive
+// (for example: "sample.csv").
 
 foreach ($csvFiles as $csvFile) {
     $csv = $zcsv->GetCsv($csvFile);
@@ -261,6 +261,24 @@ class ZippedCsv {
     public function GetTableNames(): array;
 
     /**
+     * Get zcsv metadata.
+     * If metadata.json is missing, default metadata is returned.
+     * @return array
+     */
+    public function GetMetadata(): array;
+
+    /**
+     * Set zcsv metadata and mark metadata.json for persistence.
+     * @param array $metadata
+     */
+    public function SetMetadata(array $metadata): void;
+
+    /**
+     * Note: $fileName in GetCsv/AddCsv/RemoveCsv accepts both forms:
+     * "sample" and "sample.csv".
+     */
+
+    /**
      * Get the Csv object from the zip file
      * @param string $fileName
      * @return Csv
@@ -285,6 +303,13 @@ class ZippedCsv {
      * Save the Csv objects to the zip file
      */
     public function Save();
+
+    /**
+     * Note: metadata.json is optional.
+     * It is written only after SetMetadata(...) is called.
+        * If metadata.json is malformed, safe defaults are used in memory
+        * and corrected metadata.json is written on Save().
+     */
 
     /**
      * Close the zip file
