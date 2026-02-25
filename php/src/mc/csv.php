@@ -134,6 +134,7 @@ class Csv
         }
         if (array_keys($row) === $this->header) {
             $this->data[] = $row;
+            return self::CSV_OK;
         } else if (array_keys($row) === range(0, count($row) - 1)) {
             $this->data[] = array_combine($this->header, $row);
             return self::CSV_OK;
@@ -280,12 +281,16 @@ class Csv
         string $quoteChar = Csv::QUOTE_CHAR
     ): int {
         $this->data = [];
+        $this->header = [];
 
-        $lines = explode(PHP_EOL, $csvString);
-        // remove all empty lines
-        $lines = array_filter($lines, function ($line) {
-            return !empty($line);
-        });
+        $lines = preg_split('/\r\n|\r|\n/', $csvString);
+        $lines = array_values(array_filter($lines, function ($line) {
+            return trim($line) !== '';
+        }));
+
+        if (count($lines) === 0) {
+            return self::CSV_OK;
+        }
 
         $firstRow = str_getcsv($lines[0], $separator, $quoteChar);
         if ($hasHeader) {
