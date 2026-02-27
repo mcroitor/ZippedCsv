@@ -17,7 +17,7 @@ if ($argc < 3) {
     exit(1);
 }
 
-if(!file_exists($argv[2])) {
+if (!file_exists($argv[2])) {
     echo "CSV file not found: " . $argv[2] . PHP_EOL;
     exit(1);
 }
