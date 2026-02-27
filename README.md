@@ -8,10 +8,10 @@ The following is the structure of the zipped CSV file:
 
 ```text
 zipped_csv_file.zcsv
-│   metadata.json
+├── metadata.json
 │
-│   file1.csv
-│   file2.csv
+├── file1.csv
+├── file2.csv
 │   ...
 ```
 
