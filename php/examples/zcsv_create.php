@@ -5,8 +5,8 @@
  * php examples/zcsv_create.php <path_to_zipped_csv_file>
  */
 
-include __DIR__ . '/../src/mc/csv.php';
-include __DIR__ . '/../src/mc/zippedcsv.php';
+require_once __DIR__ . '/../src/mc/csv.php';
+require_once __DIR__ . '/../src/mc/zippedcsv.php';
 
 use \mc\ZippedCsv;
 
