@@ -18,9 +18,13 @@ if ($argc < 3) {
 }
 
 $zipFile = $argv[1];
-$csvId = (int)$argv[2];
 
 try {
+    if (!ctype_digit($argv[2])) {
+        throw new \Exception("Invalid CSV ID");
+    }
+
+    $csvId = (int)$argv[2];
     $zcsv = new ZippedCsv($zipFile);
     $csvFiles = $zcsv->GetTableNames();
 
