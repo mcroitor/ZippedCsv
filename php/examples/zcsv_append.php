@@ -25,7 +25,11 @@ if(!file_exists($argv[2])) {
 try {
     $zcsv = new ZippedCsv($argv[1]);
     $csv = new \mc\Csv();
-    $csv->Load($argv[2]);
+    $loadResult = $csv->Load($argv[2]);
+    if ($loadResult !== \mc\Csv::CSV_OK) {
+        echo "Failed to load CSV file '" . $argv[2] . "'. Error code: " . $loadResult . PHP_EOL;
+        exit(1);
+    }
     $csvFileName = basename($argv[2]);
     $zcsv->AddCsv($csvFileName, $csv);
     $zcsv->Save();
