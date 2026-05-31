@@ -49,7 +49,7 @@ This repository root document describes the Zipped CSV format.
 Usage examples are provided in language-specific implementation documents:
 
 - [PHP](php/README.md)
-- Python (TODO)
+- [Python](python/README.md)
 - JavaScript/TypeScript (TODO)
 - Java (TODO)
 - C++ (TODO)
