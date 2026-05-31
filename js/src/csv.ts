@@ -167,19 +167,30 @@ export class Csv {
     }
 
     if (hasHeader) {
-        if (rows[i].length !== this._header.length) {
+        if (rows[i].length !== this._header.length) {
+
+          this._header = [];
+
+          this._data = [];
+
+          return Csv.CSV_ROW_SIZE_MISMATCH;
+
+        }
+
+      this._header = rows[0].map(String);
+      for (let i = 1; i < rows.length; i++) {
+          obj[this._header[j]] = String(rows[i][j]);
+
+        for (let j = 0; j < this._header.length; j++) {
+          obj[this._header[j]] = String(rows[i][j] ?? "");
+        if (row.length !== this._header.length) {
           this._header = [];
           this._data = [];
           return Csv.CSV_ROW_SIZE_MISMATCH;
         }
-      this._header = rows[0].map(String);
-      for (let i = 1; i < rows.length; i++) {
-          obj[this._header[j]] = String(rows[i][j]);
-        for (let j = 0; j < this._header.length; j++) {
-          obj[this._header[j]] = String(rows[i][j] ?? "");
         }
         this._data.push(obj);
-      }
+          obj[this._header[j]] = String(row[j]);
     } else {
       this._header = rows[0].map((_, idx) => String(idx));
       for (const row of rows) {
