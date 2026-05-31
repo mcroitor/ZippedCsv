@@ -153,15 +153,10 @@ export class Csv {
     this._header = [];
     this._data = [];
 
-    const trimmed = csvString.trim();
-    if (!trimmed) {
-      return Csv.CSV_OK;
-    }
-
-    const result = Papa.parse<string[]>(trimmed, {
+    const result = Papa.parse<string[]>(csvString, {
       delimiter: separator,
       quoteChar: quoteChar,
-      skipEmptyLines: true,
+      skipEmptyLines: "greedy",
     });
 
     const rows = result.data;
