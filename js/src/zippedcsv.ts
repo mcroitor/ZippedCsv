@@ -144,6 +144,9 @@ export class ZippedCsv {
 
   addCsv(fileName: string, csv: Csv): void {
     const name = this._normalizeName(fileName);
+    if (!ZippedCsv._isRootCsvFile(name)) {
+      throw new Error(`Only root-level CSV file names are supported: ${fileName}`);
+    }
     this._csv.set(name, csv);
   }
 
