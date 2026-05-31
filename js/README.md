@@ -62,7 +62,7 @@ csv.save(filePath, hasHeader?, sep?, quoteChar?)       // number
 
 Error codes: `Csv.CSV_OK`, `CSV_FILE_NOT_READABLE`, `CSV_FILE_NOT_WRITABLE`, `CSV_ROW_SIZE_MISMATCH`, `CSV_COLUMN_SIZE_MISMATCH`, `CSV_DIFFERENT_KEYS`, `CSV_COLUMN_NOT_FOUND`, `CSV_ROW_NOT_FOUND`.
 
-Default separator is `";"`, default quote char is `"\"`.
+Default separator is `";"`, default quote char is `"`.
 
 ### `ZippedCsv`
 
