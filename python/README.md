@@ -14,7 +14,7 @@ Python implementation of the Zipped CSV format.
 From repository root:
 
 ```bash
-set PYTHONPATH=python/src
+python -m pip install -e python
 python -m unittest discover -s python/tests -p "test_*.py"
 ```
 
@@ -23,7 +23,7 @@ python -m unittest discover -s python/tests -p "test_*.py"
 From repository root:
 
 ```bash
-set PYTHONPATH=python/src
+python -m pip install -e python
 python python/examples/zcsv_create.py sample.zcsv
 python python/examples/zcsv_append.py sample.zcsv path/to/file.csv
 python python/examples/zcsv_status.py sample.zcsv
