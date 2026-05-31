@@ -1,3 +1,19 @@
 # exclude zipped csv
 *.csv.zip
 *.zcsv
+# skip downloadable packages and intermediate files
+## JS / TS
+node_modules/
+## Python
+__pycache__/
+*.pyc
+*.pyo
+## C / C++
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+*.exe
+## Java
+*.class

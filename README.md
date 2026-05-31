@@ -50,6 +50,6 @@ Usage examples are provided in language-specific implementation documents:
 
 - [PHP](php/README.md)
 - [Python](python/README.md)
-- JavaScript/TypeScript (TODO)
+- [JavaScript/TypeScript](js/README.md)
 - Java (TODO)
 - C++ (TODO)
