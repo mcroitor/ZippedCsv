@@ -153,10 +153,12 @@ export class Csv {
     this._header = [];
     this._data = [];
 
-    const result = Papa.parse<string[]>(csvString, {
+    const result = Papa.parse<string[]>(csvString, {
+
       delimiter: separator,
       quoteChar: quoteChar,
-      skipEmptyLines: "greedy",
+      skipEmptyLines: "greedy",
+
     });
 
     const rows = result.data;
@@ -165,9 +167,14 @@ export class Csv {
     }
 
     if (hasHeader) {
+        if (rows[i].length !== this._header.length) {
+          this._header = [];
+          this._data = [];
+          return Csv.CSV_ROW_SIZE_MISMATCH;
+        }
       this._header = rows[0].map(String);
       for (let i = 1; i < rows.length; i++) {
-        const obj: Record<string, string> = {};
+          obj[this._header[j]] = String(rows[i][j]);
         for (let j = 0; j < this._header.length; j++) {
           obj[this._header[j]] = String(rows[i][j] ?? "");
         }
