@@ -22,12 +22,13 @@ using ZipPtr = std::unique_ptr<zip_t, ZipCloser>;
 
 // True for names that sit at the root level and have a .csv extension.
 bool IsRootCsv(const std::string& name) {
-  if (name.find('/') != std::string::npos) return false;
+  if (name.find('/') != std::string::npos || name.find('\\') != std::string::npos)
+    return false;
   if (name.size() < 4) return false;
   std::string lower = name;
-  std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-  return lower.size() >= 4 &&
-         lower.compare(lower.size() - 4, 4, ".csv") == 0;
+  std::transform(lower.begin(), lower.end(), lower.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return lower.compare(lower.size() - 4, 4, ".csv") == 0;
 }
 
 // Read all bytes from a zip entry by index into a std::string.
