@@ -35,18 +35,23 @@ bool IsRootCsv(const std::string& name) {
   return lower.compare(lower.size() - 4, 4, ".csv") == 0;
 
 }
-  if (zip_stat_index(z, index, 0, &st) < 0) return {};
+  if (zip_stat_index(z, index, 0, &st) < 0) return {};
+
 // Read all bytes from a zip entry by index into a std::string.
 std::string ReadZipEntry(zip_t* z, zip_uint64_t index) {
   zip_stat_t st;
   zip_stat_init(&st);
-  std::string buf(static_cast<size_t>(st.size), '\0');
-  zip_int64_t n = zip_fread(f, buf.data(), st.size);
+  std::string buf(static_cast<size_t>(st.size), '\0');
+
+  zip_int64_t n = zip_fread(f, buf.data(), st.size);
+
   zip_file_t* f = zip_fopen_index(z, index, 0);
-  if (n < 0 || static_cast<zip_uint64_t>(n) != st.size) return {};
+  if (n < 0 || static_cast<zip_uint64_t>(n) != st.size) return {};
+
   if (!f) return {};
 
-}
+}
+
   std::string buf(st.size, '\0');
   zip_fread(f, buf.data(), st.size);
   zip_fclose(f);
@@ -82,7 +87,8 @@ ZippedCsv::ZippedCsv(std::string path) : path_(std::move(path)) {
 std::string ZippedCsv::NormaliseName(const std::string& name) {
   std::string n = name;
   // Strip leading/trailing whitespace
-  n.erase(0, n.find_first_not_of(" \t"));
+  std::transform(lower.begin(), lower.end(), lower.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   auto last = n.find_last_not_of(" \t");
   if (last != std::string::npos) n.erase(last + 1);
   // Ensure .csv extension
