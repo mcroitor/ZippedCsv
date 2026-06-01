@@ -190,8 +190,9 @@ int Csv::AddColumn(const std::string& column_name,
 void Csv::SetCellValue(const std::string& column_name, int index,
                        const std::string& value) {
   int col = ColumnIndex(column_name);
-  if (col < 0) return;
-  if (index < 0 || index >= TotalRows()) return;
+  if (col < 0) throw std::invalid_argument("Column not found: " + column_name);
+  if (index < 0 || index >= TotalRows())
+    throw std::out_of_range("Row index out of range");
   rows_[static_cast<size_t>(index)][static_cast<size_t>(col)] = value;
 }
 
