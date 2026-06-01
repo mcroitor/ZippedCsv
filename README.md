@@ -52,4 +52,4 @@ Usage examples are provided in language-specific implementation documents:
 - [Python](python/README.md)
 - [JavaScript/TypeScript](js/README.md)
 - Java (TODO)
-- C++ (TODO)
+- [C++](cpp/README.md)
