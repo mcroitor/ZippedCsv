@@ -41,13 +41,13 @@ Outputs inside `build/`:
 
 ## API
 
-### `zippedcsv::Csv`
+### `mc::Csv`
 
 In-memory CSV table.
 
 ```cpp
 #include "csv.h"
-using namespace zippedcsv;
+using namespace mc;
 
 // Construct from 2-D array (first row = header)
 Csv csv({{"Name", "Age"}, {"Alice", "30"}});
@@ -92,13 +92,13 @@ csv.Load("/path/to/file.csv");
 | `kColumnNotFound` | 7 | Named column does not exist |
 | `kRowNotFound` | 8 | Row index out of range |
 
-### `zippedcsv::ZippedCsv`
+### `mc::ZippedCsv`
 
 ZIP-based archive of named CSV tables with optional metadata.
 
 ```cpp
 #include "zippedcsv.h"
-using namespace zippedcsv;
+using namespace mc;
 
 // Open or create
 ZippedCsv z("archive.zcsv");

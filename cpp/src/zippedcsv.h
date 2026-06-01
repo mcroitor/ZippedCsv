@@ -25,7 +25,8 @@ struct Metadata {
 // optional metadata.json).
 //
 // On construction the archive is read into memory. Save() writes it back to
-// the same path when a non-empty path was provided.
+// the same path when a non-empty path was provided.
+class ZippedCsv {
  public:
   static constexpr const char* kMetadataFilename = "metadata.json";
 

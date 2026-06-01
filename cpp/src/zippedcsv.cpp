@@ -1,7 +1,7 @@
 #include "zippedcsv.h"
 
 #include <algorithm>
-#include <cctype>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -24,38 +24,25 @@ using ZipPtr = std::unique_ptr<zip_t, ZipCloser>;
 // True for names that sit at the root level and have a .csv extension.
 bool IsRootCsv(const std::string& name) {
   if (name.find('/') != std::string::npos || name.find('\\') != std::string::npos)
-
     return false;
-
   if (name.size() < 4) return false;
   std::string lower = name;
   std::transform(lower.begin(), lower.end(), lower.begin(),
-
                  [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-
   return lower.compare(lower.size() - 4, 4, ".csv") == 0;
-
 }
-  if (zip_stat_index(z, index, 0, &st) < 0) return {};
 
 // Read all bytes from a zip entry by index into a std::string.
 std::string ReadZipEntry(zip_t* z, zip_uint64_t index) {
   zip_stat_t st;
   zip_stat_init(&st);
-  std::string buf(static_cast<size_t>(st.size), '\0');
-
-  zip_int64_t n = zip_fread(f, buf.data(), st.size);
-
+  if (zip_stat_index(z, index, 0, &st) < 0) return {};
   zip_file_t* f = zip_fopen_index(z, index, 0);
-  if (n < 0 || static_cast<zip_uint64_t>(n) != st.size) return {};
-
   if (!f) return {};
-
-}
-
-  std::string buf(st.size, '\0');
-  zip_fread(f, buf.data(), st.size);
+  std::string buf(static_cast<size_t>(st.size), '\0');
+  zip_int64_t n = zip_fread(f, buf.data(), st.size);
   zip_fclose(f);
+  if (n < 0 || static_cast<zip_uint64_t>(n) != st.size) return {};
   return buf;
 }
 
@@ -89,15 +76,12 @@ ZippedCsv::ZippedCsv(std::string path) : path_(std::move(path)) {
 std::string ZippedCsv::NormaliseName(const std::string& name) {
   std::string n = name;
   // Strip leading/trailing whitespace
-  std::transform(lower.begin(), lower.end(), lower.begin(),
-
-                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-
   auto last = n.find_last_not_of(" \t");
   if (last != std::string::npos) n.erase(last + 1);
   // Ensure .csv extension
   std::string lower = n;
-  std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+  std::transform(lower.begin(), lower.end(), lower.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   if (lower.size() < 4 || lower.compare(lower.size() - 4, 4, ".csv") != 0) {
     n += ".csv";
   }
@@ -120,46 +104,58 @@ void ZippedCsv::NormaliseMetadata() {
 void ZippedCsv::LoadExisting() {
   int err = 0;
   ZipPtr z(zip_open(path_.c_str(), ZIP_RDONLY, &err));
-  if (!z) return;  // treat unopenable archive as empty
+  if (!z) {
+    throw std::runtime_error("Cannot open ZIP archive: " + path_);
+  }
 
   zip_int64_t n = zip_get_num_entries(z.get(), 0);
+
+  // First pass: find and parse metadata.json so its settings are available
+  // when CSV entries are loaded, regardless of entry order in the archive.
+  for (zip_int64_t i = 0; i < n; ++i) {
+    const char* name_c = zip_get_name(z.get(), static_cast<zip_uint64_t>(i), 0);
+    if (!name_c) continue;
+    std::string entry_name(name_c);
+    if (entry_name != kMetadataFilename) continue;
+
+    std::string raw = ReadZipEntry(z.get(), static_cast<zip_uint64_t>(i));
+    try {
+      auto j = nlohmann::json::parse(raw);
+      if (j.contains("title") && j["title"].is_string())
+        metadata_.title = j["title"].get<std::string>();
+      if (j.contains("description") && j["description"].is_string())
+        metadata_.description = j["description"].get<std::string>();
+      if (j.contains("author") && j["author"].is_string())
+        metadata_.author = j["author"].get<std::string>();
+      if (j.contains("createdAt") && j["createdAt"].is_string())
+        metadata_.created_at = j["createdAt"].get<std::string>();
+      if (j.contains("updatedAt") && j["updatedAt"].is_string())
+        metadata_.updated_at = j["updatedAt"].get<std::string>();
+      if (j.contains("delimiter") && j["delimiter"].is_string()) {
+        std::string d = j["delimiter"].get<std::string>();
+        if (!d.empty()) metadata_.delimiter = d[0];
+      }
+      if (j.contains("quoteChar") && j["quoteChar"].is_string()) {
+        std::string qc = j["quoteChar"].get<std::string>();
+        if (!qc.empty()) metadata_.quote_char = qc[0];
+      }
+      if (j.contains("hasHeader") && j["hasHeader"].is_boolean())
+        metadata_.has_header = j["hasHeader"].get<bool>();
+      NormaliseMetadata();
+    } catch (...) {
+      // Invalid JSON — keep defaults
+      metadata_ = Metadata{};
+    }
+    break;
+  }
+
+  // Second pass: load CSV files using the now-correct metadata settings.
   for (zip_int64_t i = 0; i < n; ++i) {
     const char* name_c = zip_get_name(z.get(), static_cast<zip_uint64_t>(i), 0);
     if (!name_c) continue;
     std::string entry_name(name_c);
 
-    if (entry_name == kMetadataFilename) {
-      std::string raw =
-          ReadZipEntry(z.get(), static_cast<zip_uint64_t>(i));
-      try {
-        auto j = nlohmann::json::parse(raw);
-        if (j.contains("title") && j["title"].is_string())
-          metadata_.title = j["title"].get<std::string>();
-        if (j.contains("description") && j["description"].is_string())
-          metadata_.description = j["description"].get<std::string>();
-        if (j.contains("author") && j["author"].is_string())
-          metadata_.author = j["author"].get<std::string>();
-        if (j.contains("createdAt") && j["createdAt"].is_string())
-          metadata_.created_at = j["createdAt"].get<std::string>();
-        if (j.contains("updatedAt") && j["updatedAt"].is_string())
-          metadata_.updated_at = j["updatedAt"].get<std::string>();
-        if (j.contains("delimiter") && j["delimiter"].is_string()) {
-          std::string d = j["delimiter"].get<std::string>();
-          if (!d.empty()) metadata_.delimiter = d[0];
-        }
-        if (j.contains("quoteChar") && j["quoteChar"].is_string()) {
-          std::string qc = j["quoteChar"].get<std::string>();
-          if (!qc.empty()) metadata_.quote_char = qc[0];
-        }
-        if (j.contains("hasHeader") && j["hasHeader"].is_boolean())
-          metadata_.has_header = j["hasHeader"].get<bool>();
-        NormaliseMetadata();
-      } catch (...) {
-        // Invalid JSON — keep defaults
-        metadata_ = Metadata{};
-      }
-      continue;
-    }
+    if (entry_name == kMetadataFilename) continue;
 
     if (IsRootCsv(entry_name)) {
       std::string content =
@@ -232,11 +228,9 @@ int ZippedCsv::Save() const {
   };
   std::vector<EntryData> entries;
 
-  // Metadata
-  bool has_meta = !metadata_.title.empty() || !metadata_.description.empty() ||
-                  !metadata_.author.empty() || !metadata_.created_at.empty() ||
-                  !metadata_.updated_at.empty();
-  if (has_meta) {
+  // Metadata — always write so delimiter/quote_char/has_header are preserved
+  // even when no string fields (title, description, etc.) are set.
+  {
     nlohmann::json j;
     if (!metadata_.title.empty()) j["title"] = metadata_.title;
     if (!metadata_.description.empty()) j["description"] = metadata_.description;

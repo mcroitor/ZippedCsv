@@ -27,7 +27,7 @@ target_include_directories(zippedcsv_static PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(zippedcsv_static PRIVATE
+target_link_libraries(zippedcsv_static PUBLIC
   libzip::zip
   nlohmann_json::nlohmann_json
 )
