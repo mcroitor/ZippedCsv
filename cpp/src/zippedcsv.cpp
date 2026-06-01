@@ -1,6 +1,7 @@
 #include "zippedcsv.h"
 
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -71,7 +72,8 @@ ZippedCsv::ZippedCsv(std::string path) : path_(std::move(path)) {
     // Convert extension to lower-case for comparison
     std::string lower_ext = ext;
     std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
     if (lower_ext != ".zcsv" && lower_ext != ".zip") {
       path_ += ".zcsv";
     }
