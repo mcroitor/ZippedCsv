@@ -22,24 +22,31 @@ using ZipPtr = std::unique_ptr<zip_t, ZipCloser>;
 
 // True for names that sit at the root level and have a .csv extension.
 bool IsRootCsv(const std::string& name) {
-  if (name.find('/') != std::string::npos || name.find('\\') != std::string::npos)
-    return false;
+  if (name.find('/') != std::string::npos || name.find('\\') != std::string::npos)
+
+    return false;
+
   if (name.size() < 4) return false;
   std::string lower = name;
-  std::transform(lower.begin(), lower.end(), lower.begin(),
-                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-  return lower.compare(lower.size() - 4, 4, ".csv") == 0;
-}
+  std::transform(lower.begin(), lower.end(), lower.begin(),
 
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+  return lower.compare(lower.size() - 4, 4, ".csv") == 0;
+
+}
+  if (zip_stat_index(z, index, 0, &st) < 0) return {};
 // Read all bytes from a zip entry by index into a std::string.
 std::string ReadZipEntry(zip_t* z, zip_uint64_t index) {
   zip_stat_t st;
   zip_stat_init(&st);
-  zip_stat_index(z, index, 0, &st);
-
+  std::string buf(static_cast<size_t>(st.size), '\0');
+  zip_int64_t n = zip_fread(f, buf.data(), st.size);
   zip_file_t* f = zip_fopen_index(z, index, 0);
+  if (n < 0 || static_cast<zip_uint64_t>(n) != st.size) return {};
   if (!f) return {};
 
+}
   std::string buf(st.size, '\0');
   zip_fread(f, buf.data(), st.size);
   zip_fclose(f);
