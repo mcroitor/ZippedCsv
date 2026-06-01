@@ -71,7 +71,7 @@ ZippedCsv::ZippedCsv(std::string path) : path_(std::move(path)) {
     // Convert extension to lower-case for comparison
     std::string lower_ext = ext;
     std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(),
-                   ::tolower);
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (lower_ext != ".zcsv" && lower_ext != ".zip") {
       path_ += ".zcsv";
     }
@@ -87,8 +87,10 @@ ZippedCsv::ZippedCsv(std::string path) : path_(std::move(path)) {
 std::string ZippedCsv::NormaliseName(const std::string& name) {
   std::string n = name;
   // Strip leading/trailing whitespace
-  std::transform(lower.begin(), lower.end(), lower.begin(),
-                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  std::transform(lower.begin(), lower.end(), lower.begin(),
+
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
   auto last = n.find_last_not_of(" \t");
   if (last != std::string::npos) n.erase(last + 1);
   // Ensure .csv extension
