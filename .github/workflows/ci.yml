@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  cpp:
+    name: C++ (Windows, MSYS2 UCRT64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Package images are refreshed by the MSYS2 repository; caching the
+      # UCRT64 tree saves time but adds staleness risk, so we install fresh.
+      - name: Set up MSYS2 / UCRT64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-libzip
+            mingw-w64-ucrt-x86_64-nlohmann-json
+            mingw-w64-ucrt-x86_64-catch
+
+      - name: Configure and build
+        shell: msys2 {0}
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -B cpp/build -S cpp
+          cmake --build cpp/build
+
+      - name: Run tests
+        shell: msys2 {0}
+        run: ctest --test-dir cpp/build --output-on-failure
+
+  python:
+    name: Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: python/requirements-dev.txt
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r python/requirements-dev.txt
+
+      - name: Run tests
+        working-directory: python
+        run: python -m pytest
+
+  javascript:
+    name: JS/TS
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: js
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  php:
+    name: PHP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: zip
+          coverage: none
+
+      - name: Run tests
+        working-directory: php
+        run: php tests/runner.php
+
+  interop:
+    name: Cross-language format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install JS dependencies and build
+        working-directory: js
+        run: |
+          npm ci
+          npm run build
+
+      - name: JS writes archive, Python reads it
+        run: |
+          mkdir -p build
+          node <<'EOF'
+          const { Csv, ZippedCsv } = require("./js/dist/index.js");
+          const archive = new ZippedCsv("build/interop_js_write.zcsv");
+          archive.addCsv("sample.csv", new Csv([["a", "b"], ["1", "2"]]));
+          archive.save();
+          archive.close();
+          EOF
+
+          PYTHONPATH=python/src python <<'EOF'
+          from zippedcsv import ZippedCsv
+
+          archive = ZippedCsv("build/interop_js_write.zcsv")
+          row = archive.GetCsv("sample.csv").GetRow(0)
+          assert row == {"a": "1", "b": "2"}, row
+          print("JS -> Python:", row)
+          EOF
+
+      - name: Python writes archive, JS reads it
+        run: |
+          mkdir -p build
+          PYTHONPATH=python/src python <<'EOF'
+          from zippedcsv import Csv, ZippedCsv
+
+          archive = ZippedCsv("build/interop_py_write.zcsv")
+          archive.AddCsv("sample.csv", Csv([["a", "b"], ["1", "2"]]))
+          archive.Save()
+          archive.Close()
+          EOF
+
+          node <<'EOF'
+          const { ZippedCsv } = require("./js/dist/index.js");
+          const archive = new ZippedCsv("build/interop_py_write.zcsv");
+          const row = archive.getCsv("sample.csv").getRow(0);
+          if (row.a !== "1" || row.b !== "2") {
+            throw new Error(`unexpected row: ${JSON.stringify(row)}`);
+          }
+          console.log("Python -> JS:", JSON.stringify(row));
+          EOF
