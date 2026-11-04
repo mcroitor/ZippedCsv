@@ -14,7 +14,9 @@ clean:
 
 install-deps:
 	pacman -S --needed --noconfirm \
-		mingw-w64-x86_64-libzip \
-		mingw-w64-x86_64-nlohmann-json \
-		mingw-w64-x86_64-catch \
-		mingw-w64-x86_64-cmake
+		mingw-w64-ucrt-x86_64-gcc \
+		mingw-w64-ucrt-x86_64-cmake \
+		mingw-w64-ucrt-x86_64-libzip \
+		mingw-w64-ucrt-x86_64-nlohmann-json \
+		mingw-w64-ucrt-x86_64-catch \
+		mingw-w64-ucrt-x86_64-ninja
