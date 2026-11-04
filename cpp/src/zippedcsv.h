@@ -24,6 +24,10 @@ struct Metadata {
 // Reads and writes .zcsv (ZIP archive with root-level CSV files and an
 // optional metadata.json).
 //
+// metadata.json is written on Save() only when metadata was set explicitly
+// (SetMetadata) or when the opened archive already contains the file (even a
+// malformed one, which is then rewritten as valid JSON).
+//
 // On construction the archive is read into memory. Save() writes it back to
 // the same path when a non-empty path was provided.
 class ZippedCsv {
@@ -72,6 +76,8 @@ class ZippedCsv {
 
   std::string path_;
   Metadata metadata_;
+  // True when metadata was set explicitly or loaded from an existing archive.
+  bool has_metadata_ = false;
   std::vector<std::string> table_order_;  // insertion-ordered names
   std::map<std::string, Csv> tables_;
 };

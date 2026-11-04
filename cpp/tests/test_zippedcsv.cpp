@@ -29,6 +29,15 @@ TEST_CASE("Save and reload single CSV without metadata", "[mc]") {
     REQUIRE(z.Save() == 0);
   }
 
+  // metadata.json must not be created when metadata was never set
+  {
+    int err = 0;
+    zip_t* z_raw = zip_open(path.c_str(), ZIP_RDONLY, &err);
+    REQUIRE(z_raw != nullptr);
+    CHECK(zip_name_locate(z_raw, ZippedCsv::kMetadataFilename, 0) == -1);
+    zip_close(z_raw);
+  }
+
   ZippedCsv z2(path);
   auto names = z2.GetTableNames();
   REQUIRE(names.size() == 1);
@@ -56,6 +65,15 @@ TEST_CASE("Metadata is stored and reloaded", "[mc]") {
     csv.LoadFromString("A,B\n1,2\n", true, ',');
     z.AddCsv("table", csv);
     REQUIRE(z.Save() == 0);
+  }
+
+  // metadata.json must exist after SetMetadata
+  {
+    int err = 0;
+    zip_t* z_raw = zip_open(path.c_str(), ZIP_RDONLY, &err);
+    REQUIRE(z_raw != nullptr);
+    CHECK(zip_name_locate(z_raw, ZippedCsv::kMetadataFilename, 0) >= 0);
+    zip_close(z_raw);
   }
 
   ZippedCsv z2(path);
@@ -96,6 +114,33 @@ TEST_CASE("Invalid metadata JSON recovers with defaults",
   // CSV should still be loaded (uses default delimiter, table content will
   // have raw semicolons inside a single column — that is expected behaviour)
   CHECK(z.GetTableNames().size() == 1);
+
+  // The malformed metadata.json must be rewritten as valid JSON on save
+  REQUIRE(z.Save() == 0);
+  {
+    zip_t* z_check = zip_open(path.c_str(), ZIP_RDONLY, &err);
+    REQUIRE(z_check != nullptr);
+    zip_int64_t idx = zip_name_locate(z_check, ZippedCsv::kMetadataFilename, 0);
+    CHECK(idx >= 0);
+    if (idx >= 0) {
+      zip_file_t* f =
+          zip_fopen_index(z_check, static_cast<zip_uint64_t>(idx), 0);
+      REQUIRE(f != nullptr);
+      std::string raw;
+      char buf[256];
+      zip_int64_t got;
+      while ((got = zip_fread(f, buf, sizeof(buf))) > 0) {
+        raw.append(buf, static_cast<size_t>(got));
+      }
+      CHECK(got == 0);
+      CHECK(zip_fclose(f) == 0);
+      CHECK(raw[0] == '{');
+    }
+    zip_close(z_check);
+  }
+
+  ZippedCsv z_reloaded(path);
+  CHECK(z_reloaded.GetMetadata().delimiter == ',');
 
   fs::remove(path);
 }
