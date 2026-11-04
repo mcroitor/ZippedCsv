@@ -3,6 +3,8 @@
 # exclude zipped csv
 *.csv.zip
 *.zcsv
+# keep cross-language test fixtures
+!python/tests/fixtures/*.zcsv
 # skip downloadable packages and intermediate files
 ## JS / TS
 node_modules/

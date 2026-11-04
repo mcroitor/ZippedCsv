@@ -67,6 +67,15 @@ function test_zippedcsv_metadata_optional() {
     test($metadata === false, "metadata.json is optional and not created by default");
 }
 
+function test_zippedcsv_default_delimiter_is_comma() {
+    $zip = new ZipArchive();
+    $zip->open(ZIPPED_CSV_NO_METADATA_FILENAME);
+    $csvRaw = $zip->getFromName(CSV_NAME1);
+    $zip->close();
+
+    test($csvRaw !== false && strpos($csvRaw, ',') !== false, "default csv delimiter is comma");
+}
+
 function test_zippedcsv_metadata_apply_and_persist() {
     if (file_exists(ZIPPED_CSV_WITH_METADATA_FILENAME)) {
         unlink(ZIPPED_CSV_WITH_METADATA_FILENAME);
@@ -146,5 +155,6 @@ test_zippedcsv_create();
 test_zippedcsv_add();
 test_zippedcsv_read();
 test_zippedcsv_metadata_optional();
+test_zippedcsv_default_delimiter_is_comma();
 test_zippedcsv_metadata_apply_and_persist();
 test_zippedcsv_invalid_metadata_recovery();
