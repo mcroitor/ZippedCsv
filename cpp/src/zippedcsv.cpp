@@ -118,6 +118,10 @@ void ZippedCsv::LoadExisting() {
     std::string entry_name(name_c);
     if (entry_name != kMetadataFilename) continue;
 
+    // Mark the file as present even if its content is malformed, so a later
+    // Save() rewrites it as valid JSON.
+    has_metadata_ = true;
+
     std::string raw = ReadZipEntry(z.get(), static_cast<zip_uint64_t>(i));
     try {
       auto j = nlohmann::json::parse(raw);
@@ -178,6 +182,7 @@ std::vector<std::string> ZippedCsv::GetTableNames() const {
 Metadata ZippedCsv::GetMetadata() const { return metadata_; }
 void ZippedCsv::SetMetadata(Metadata metadata) {
   metadata_ = std::move(metadata);
+  has_metadata_ = true;
   NormaliseMetadata();
 }
 
@@ -228,9 +233,10 @@ int ZippedCsv::Save() const {
   };
   std::vector<EntryData> entries;
 
-  // Metadata — always write so delimiter/quote_char/has_header are preserved
-  // even when no string fields (title, description, etc.) are set.
-  {
+  // Metadata — written only when explicitly set or already present in the
+  // opened archive. delimiter/quote_char/has_header defaults are preserved
+  // whenever the file is (re)written.
+  if (has_metadata_) {
     nlohmann::json j;
     if (!metadata_.title.empty()) j["title"] = metadata_.title;
     if (!metadata_.description.empty()) j["description"] = metadata_.description;
