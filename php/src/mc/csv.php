@@ -222,10 +222,10 @@ class Csv
             return self::CSV_FILE_NOT_WRITABLE;
         }
         if ($hasHeader) {
-            fputcsv($file, $this->header, $separator, $quoteChar);
+            fputcsv($file, $this->header, $separator, $quoteChar, '');
         }
         foreach ($this->data as $row) {
-            fputcsv($file, array_values($row), $separator, $quoteChar);
+            fputcsv($file, array_values($row), $separator, $quoteChar, '');
         }
         fclose($file);
         return self::CSV_OK;
@@ -251,7 +251,7 @@ class Csv
         }
         $this->data = [];
 
-        $firstRow = fgetcsv($file, 0, $separator, $quoteChar);
+        $firstRow = fgetcsv($file, 0, $separator, $quoteChar, '');
         if ($hasHeader) {
             $this->header = $firstRow;
         } else {
@@ -259,7 +259,7 @@ class Csv
             $this->data[] = array_combine($this->header, $firstRow);
         }
 
-        while (($row = fgetcsv($file, 0, $separator, $quoteChar)) !== false) {
+        while (($row = fgetcsv($file, 0, $separator, $quoteChar, '')) !== false) {
             $this->data[] = array_combine($this->header, $row);
         }
         fclose($file);
@@ -292,7 +292,7 @@ class Csv
             return self::CSV_OK;
         }
 
-        $firstRow = str_getcsv($lines[0], $separator, $quoteChar);
+        $firstRow = str_getcsv($lines[0], $separator, $quoteChar, '');
         if ($hasHeader) {
             $this->header = $firstRow;
             array_shift($lines);
@@ -302,7 +302,7 @@ class Csv
         }
 
         foreach ($lines as $line) {
-            $row = str_getcsv($line, $separator, $quoteChar);
+            $row = str_getcsv($line, $separator, $quoteChar, '');
             $this->data[] = array_combine($this->header, $row);
         }
         return self::CSV_OK;
@@ -342,8 +342,8 @@ class Csv
      */
     public static function Quote(string $value, string $quoteChar = Csv::QUOTE_CHAR): string
     {
-        // replace quoteChar with backslash + quoteChar
-        $value = str_replace($quoteChar, '\\' . $quoteChar, $value);
+        // double the quote character, as required by RFC 4180
+        $value = str_replace($quoteChar, $quoteChar . $quoteChar, $value);
         return $quoteChar . $value . $quoteChar;
     }
 
@@ -357,7 +357,7 @@ class Csv
     {
         // remove first and last quoteChar
         $str = substr($value, 1, -1);
-        // replace backslash + quoteChar with quoteChar
-        return str_replace('\\' . $quoteChar, $quoteChar, $str);
+        // collapse doubled quote characters, as required by RFC 4180
+        return str_replace($quoteChar . $quoteChar, $quoteChar, $str);
     }
 }
