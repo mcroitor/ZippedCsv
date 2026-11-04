@@ -77,5 +77,13 @@ class ZippedCsvTests(unittest.TestCase):
                 self.assertIsInstance(metadata, dict)
 
 
+    def test_php_generated_archive_without_metadata_uses_comma(self) -> None:
+        fixture = Path(__file__).parent / "fixtures" / "php_no_metadata.zcsv"
+        zcsv = ZippedCsv(str(fixture))
+        loaded = zcsv.GetCsv("sample.csv")
+        self.assertEqual(loaded.GetHeader(), ["a", "b"])
+        self.assertEqual(loaded.GetRow(0), {"a": "1", "b": "2"})
+
+
 if __name__ == "__main__":
     unittest.main()
