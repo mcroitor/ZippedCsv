@@ -87,7 +87,7 @@ def write_issue_number(path: Path, number: int) -> None:
     else:
         lines.insert(end, f"issue: {number}\n")
 
-    path.write_text("".join(lines), encoding="utf-8")
+    path.write_text("".join(lines), encoding="utf-8", newline="\n")
 
 
 def gh_run(gh: str, args: list[str]) -> subprocess.CompletedProcess[str]:
