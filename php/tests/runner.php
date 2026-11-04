@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * PHP test runner.
+ *
+ * Exit code contract:
+ *   0 - all assertions passed
+ *   1 - at least one assertion failed
+ */
+
+$testsPassed = 0;
+$testsFailed = 0;
+
 function message(string $type, string $message) {
     $timestamp = date('Y-m-d H:i:s');
     echo "{$timestamp} [{$type}] {$message}" . PHP_EOL;
@@ -18,7 +29,15 @@ function debug(string $message) {
 }
 
 function test(bool $expression, string $pass = "test passed", string $fail = "test failed") {
-    $expression ? info($pass) : error($fail);
+    global $testsPassed, $testsFailed;
+
+    if ($expression) {
+        $testsPassed++;
+        info($pass);
+    } else {
+        $testsFailed++;
+        error($fail);
+    }
 }
 
 
@@ -29,3 +48,9 @@ include_once __DIR__ . '/../src/mc/zippedcsv.php';
 
 include_once __DIR__ . '/tests_csv.php';
 include_once __DIR__ . '/tests_zippedcsv.php';
+
+$testsTotal = $testsPassed + $testsFailed;
+$summary = "Tests: {$testsPassed} passed, {$testsFailed} failed, {$testsTotal} total";
+$testsFailed > 0 ? error($summary) : info($summary);
+
+exit($testsFailed > 0 ? 1 : 0);

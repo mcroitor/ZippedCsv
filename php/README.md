@@ -9,6 +9,15 @@ A small PHP library to work with zipped CSV files.
 - PHP 7.4 or higher
 - Zip extension for PHP
 
+## Running tests
+
+```bash
+php tests/runner.php
+```
+
+The runner prints a passed/failed summary and exits with `0` when all
+assertions pass, or `1` when at least one assertion fails.
+
 ## Examples of usage
 
 ### Create a zipped CSV file
