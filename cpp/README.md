@@ -5,21 +5,25 @@ Provides a static library, a shared library, and four command-line tools.
 
 ## Requirements
 
-- GCC ≥ 11 (C++17), available via MSYS2 mingw64
+- GCC ≥ 11 (C++17), available via the MSYS2 UCRT64 environment
 - CMake ≥ 3.16
-- MSYS2 packages: `mingw-w64-x86_64-libzip`, `mingw-w64-x86_64-nlohmann-json`,
-  `mingw-w64-x86_64-catch` (Catch2 v3)
+- MSYS2 packages: `mingw-w64-ucrt-x86_64-libzip`, `mingw-w64-ucrt-x86_64-nlohmann-json`,
+  `mingw-w64-ucrt-x86_64-catch` (Catch2 v3)
 
 Install missing packages once:
 
 ```bash
-pacman -S --needed mingw-w64-x86_64-libzip mingw-w64-x86_64-nlohmann-json \
-                   mingw-w64-x86_64-catch mingw-w64-x86_64-cmake
+pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake \
+                   mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-nlohmann-json \
+                   mingw-w64-ucrt-x86_64-catch
 ```
+
+All build commands must be run from the **MSYS2 UCRT64 shell**
+(`MSYSTEM=UCRT64`; the UCRT64 launcher shortcut).
 
 ## Build
 
-From the MSYS2 mingw64 shell (or via the provided Makefile):
+From the MSYS2 UCRT64 shell (or via the provided Makefile):
 
 ```bash
 cd cpp
