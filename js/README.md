@@ -81,5 +81,4 @@ zcsv.removeCsv(fileName)       // void
 zcsv.save()                    // void — writes the .zcsv archive
 zcsv.close()                   // void — no-op, provided for API parity
 ```
-`ZcsvMetadata` fields: `title`, `description`, `author`, `createdAt`, `updatedAt`, `delimiter` (default `","`), `quoteChar` (default `"`), `hasHeader` (default `true`).
-`ZcsvMetadata` fields: `title`, `description`, `author`, `createdAt`, `updatedAt`, `delimiter` (default `","`), `quoteChar` (default `"\""`), `hasHeader` (default `true`).
+`ZcsvMetadata` fields: `title`, `description`, `author`, `createdAt`, `updatedAt`, `delimiter` (default `","`), `quoteChar` (default `"`), `hasHeader` (default `true`).
