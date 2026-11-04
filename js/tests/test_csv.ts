@@ -130,6 +130,24 @@ describe("Csv", () => {
     expect(csv.getRow(0)).toEqual({ a: "1", b: "2" });
   });
 
+  test("loadFromString rejects rows with mismatched columns", () => {
+    const csv = new Csv();
+    expect(csv.loadFromString("a,b\n1,2,3", true, ",")).toBe(
+      Csv.CSV_ROW_SIZE_MISMATCH
+    );
+    expect(csv.getHeader()).toEqual([]);
+    expect(csv.getData()).toEqual([]);
+  });
+
+  test("loadFromString without header rejects mismatched columns", () => {
+    const csv = new Csv();
+    expect(csv.loadFromString("1,2\n3,4,5", false, ",")).toBe(
+      Csv.CSV_ROW_SIZE_MISMATCH
+    );
+    expect(csv.getHeader()).toEqual([]);
+    expect(csv.getData()).toEqual([]);
+  });
+
   test("toString round-trips data", () => {
     const original = "a,b,c\n1,2,3\n4,5,6";
     const csv = new Csv();
