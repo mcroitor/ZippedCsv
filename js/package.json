@@ -9,7 +9,11 @@
     "test": "jest",
     "examples": "tsx",
     "viewer": "vite --config examples/viewer/vite.config.ts",
-    "viewer:build": "vite build --config examples/viewer/vite.config.ts"
+    "viewer:build": "vite build --config examples/viewer/vite.config.ts",
+    "editor:dev": "vite --config editor/vite.config.ts",
+    "editor:build": "vite build --config editor/vite.config.ts",
+    "editor:typecheck": "tsc --noEmit -p editor/tsconfig.json",
+    "editor:test": "vitest run --config editor/vitest.config.ts"
   },
   "files": [
     "dist"
@@ -26,10 +30,12 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.21",
     "@types/papaparse": "^5.3.15",
+    "ag-grid-community": "^36.3.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.3.4",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^5.1.0"
   }
 }

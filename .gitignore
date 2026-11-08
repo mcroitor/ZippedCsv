@@ -5,6 +5,7 @@
 *.zcsv
 # keep cross-language test fixtures
 !python/tests/fixtures/*.zcsv
+!js/editor/tests/fixtures/*.zcsv
 # skip downloadable packages and intermediate files
 ## JS / TS
 node_modules/

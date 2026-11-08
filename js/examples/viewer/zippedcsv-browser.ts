@@ -61,7 +61,10 @@ export class ZippedCsvBrowser {
 
   static async fromFile(file: File): Promise<ZippedCsvBrowser> {
     const instance = new ZippedCsvBrowser();
-    const zip = await JSZip.loadAsync(file);
+    // Read the bytes through arrayBuffer() so the adapter works in browsers
+    // AND in node-based unit tests — JSZip's node path does not recognize the
+    // node File object, while ArrayBuffer is supported on both platforms.
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
 
     // Read metadata (optional)
     const metaEntry = zip.file("metadata.json");
