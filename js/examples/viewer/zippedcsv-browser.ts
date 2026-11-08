@@ -116,4 +116,58 @@ export class ZippedCsvBrowser {
     if (!csv) throw new Error(`Table not found: ${name}`);
     return csv;
   }
+
+  // ── Mutations (editor) ───────────────────────────────────────────────────
+  // Semantics mirror the node ZippedCsv; save() for the adapter lands with
+  // the persistence issue (#29).
+
+  addCsv(fileName: string, csv: Csv): void {
+    const name = ZippedCsvBrowser._normalizeFilename(fileName);
+    if (!isRootCsvFile(name)) {
+      throw new Error(`Only root-level CSV file names are supported: ${fileName}`);
+    }
+    this._csv.set(name, csv);
+  }
+
+  removeCsv(fileName: string): void {
+    this._csv.delete(ZippedCsvBrowser._normalizeFilename(fileName));
+  }
+
+  /** In-place rename preserving order position and the Csv object. */
+  renameCsv(from: string, to: string): void {
+    const fromName = ZippedCsvBrowser._normalizeFilename(from);
+    const toName = ZippedCsvBrowser._normalizeFilename(to);
+    if (fromName === toName) return;
+    if (!isRootCsvFile(toName)) {
+      throw new Error(`Only root-level CSV file names are supported: ${to}`);
+    }
+    const csv = this._csv.get(fromName);
+    if (!csv) throw new Error(`Table not found: ${fromName}`);
+    if (this._csv.has(toName)) throw new Error(`Duplicate table name: ${toName}`);
+    this._csv = new Map(
+      [...this._csv.entries()].map(([key, value]) => [
+        key === fromName ? toName : key,
+        value,
+      ])
+    );
+  }
+
+  /** Inserts at a position of the table order (0..size); undo support. */
+  insertCsvAt(index: number, fileName: string, csv: Csv): void {
+    const name = ZippedCsvBrowser._normalizeFilename(fileName);
+    if (!isRootCsvFile(name)) {
+      throw new Error(`Only root-level CSV file names are supported: ${fileName}`);
+    }
+    if (index < 0 || index > this._csv.size) {
+      throw new Error(`Invalid table position: ${index}`);
+    }
+    if (this._csv.has(name)) throw new Error(`Duplicate table name: ${name}`);
+    const entries = [...this._csv.entries()];
+    entries.splice(index, 0, [name, csv]);
+    this._csv = new Map(entries);
+  }
+
+  private static _normalizeFilename(name: string): string {
+    return name.toLowerCase().endsWith(".csv") ? name : `${name}.csv`;
+  }
 }

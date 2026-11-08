@@ -9,6 +9,7 @@
 # skip downloadable packages and intermediate files
 ## JS / TS
 node_modules/
+js/editor/dist/
 ## Python
 __pycache__/
 *.pyc

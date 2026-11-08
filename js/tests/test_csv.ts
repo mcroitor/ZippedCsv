@@ -177,4 +177,44 @@ describe("Csv", () => {
     const csv = new Csv();
     expect(csv.load("/non/existent/path.csv")).toBe(Csv.CSV_FILE_NOT_READABLE);
   });
+
+  test("insertRow places a row at the given position", () => {
+    const csv = new Csv([["a", "b"], ["1", "2"], ["3", "4"]]);
+    expect(csv.insertRow(1, ["x", "y"])).toBe(Csv.CSV_OK);
+    expect(csv.getRow(1)).toEqual({ a: "x", b: "y" });
+    expect(csv.getRow(2)).toEqual({ a: "3", b: "4" });
+    expect(csv.totalRows()).toBe(3);
+
+    expect(csv.insertRow(csv.totalRows(), ["last", "row"])).toBe(Csv.CSV_OK);
+    expect(csv.getRow(3)).toEqual({ a: "last", b: "row" });
+  });
+
+  test("insertRow with record places values by header", () => {
+    const csv = new Csv([["a", "b"], ["1", "2"]]);
+    expect(csv.insertRow(0, { a: "first", b: "row" })).toBe(Csv.CSV_OK);
+    expect(csv.getRow(0)).toEqual({ a: "first", b: "row" });
+  });
+
+  test("insertRow rejects invalid index and size mismatches", () => {
+    const csv = new Csv([["a", "b"], ["1", "2"]]);
+    expect(csv.insertRow(-1, ["x", "y"])).toBe(Csv.CSV_ROW_NOT_FOUND);
+    expect(csv.insertRow(3, ["x", "y"])).toBe(Csv.CSV_ROW_NOT_FOUND);
+    expect(csv.insertRow(1, ["x"])).toBe(Csv.CSV_ROW_SIZE_MISMATCH);
+  });
+
+  test("insertColumn places a column at the given position", () => {
+    const csv = new Csv([["a", "b"], ["1", "2"], ["3", "4"]]);
+    expect(csv.insertColumn(1, "mid", ["A", "B"])).toBe(Csv.CSV_OK);
+    expect(csv.getHeader()).toEqual(["a", "mid", "b"]);
+    expect(csv.getCell("mid", 0)).toBe("A");
+    expect(csv.getCell("b", 1)).toBe("4");
+    expect(csv.totalColumns()).toBe(3);
+  });
+
+  test("insertColumn rejects invalid index and size mismatches", () => {
+    const csv = new Csv([["a"], ["1"]]);
+    expect(csv.insertColumn(-1, "x", [""])).toBe(Csv.CSV_COLUMN_NOT_FOUND);
+    expect(csv.insertColumn(2, "x", [""])).toBe(Csv.CSV_COLUMN_NOT_FOUND);
+    expect(csv.insertColumn(0, "x", [])).toBe(Csv.CSV_COLUMN_SIZE_MISMATCH);
+  });
 });
