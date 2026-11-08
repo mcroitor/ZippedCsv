@@ -129,6 +129,54 @@
         font-weight: 600;
       }
 
+      #toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem 0.5rem;
+        padding: 0.6rem 1.25rem;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e8eaed;
+        font-size: 0.82rem;
+      }
+
+      #toolbar button {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        color: #374151;
+      }
+
+      #toolbar button:hover:not(:disabled) {
+        border-color: #2563eb;
+        color: #2563eb;
+      }
+
+      #toolbar button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      #toolbar .sep {
+        width: 1px;
+        height: 1.4rem;
+        background: #e8eaed;
+        margin: 0 0.25rem;
+      }
+
+      #column-select {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 0.3rem 0.45rem;
+        font-size: 0.8rem;
+        background: #fff;
+        color: #374151;
+        max-width: 12rem;
+      }
+
       #grid-container {
         padding: 1rem 1.25rem 1.25rem;
         height: 480px;
@@ -155,6 +203,21 @@
 
       <div id="tabs-container" hidden>
         <div id="tab-buttons"></div>
+        <div id="toolbar" hidden>
+          <button id="btn-undo" disabled>↶ Undo</button>
+          <button id="btn-redo" disabled>↷ Redo</button>
+          <span class="sep"></span>
+          <button id="btn-add-row">Add row</button>
+          <button id="btn-remove-rows" disabled>Remove selected rows</button>
+          <span class="sep"></span>
+          <button id="btn-add-column">Add column</button>
+          <select id="column-select"></select>
+          <button id="btn-remove-column">Remove column</button>
+          <span class="sep"></span>
+          <button id="btn-add-table">New table</button>
+          <button id="btn-rename-table">Rename table</button>
+          <button id="btn-remove-table">Delete table</button>
+        </div>
         <div id="grid-container"></div>
       </div>
     </div>

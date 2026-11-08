@@ -144,6 +144,57 @@ export class Csv {
     return Csv.CSV_OK;
   }
 
+  /**
+   * Insert a row at the given position (0..totalRows); the length checks match
+   * addRow(). Additive API for the editor's undo stack — the other
+   * implementations do not have it yet.
+   */
+  insertRow(index: number, row: string[] | Record<string, string>): number {
+    if (index < 0 || index > this._data.length) {
+      return Csv.CSV_ROW_NOT_FOUND;
+    }
+    if (Array.isArray(row)) {
+      if (row.length !== this._header.length) {
+        return Csv.CSV_ROW_SIZE_MISMATCH;
+      }
+      const obj: Record<string, string> = {};
+      for (let i = 0; i < this._header.length; i++) {
+        obj[this._header[i]] = String(row[i]);
+      }
+      this._data.splice(index, 0, obj);
+      return Csv.CSV_OK;
+    } else {
+      if (Object.keys(row).length !== this._header.length) {
+        return Csv.CSV_ROW_SIZE_MISMATCH;
+      }
+      const rowKeys = Object.keys(row);
+      if (rowKeys.length !== this._header.length || !rowKeys.every((k, i) => k === this._header[i])) {
+        return Csv.CSV_DIFFERENT_KEYS;
+      }
+      this._data.splice(index, 0, { ...row });
+      return Csv.CSV_OK;
+    }
+  }
+
+  /**
+   * Insert a column at the given position (0..totalColumns); the size check
+   * matches addColumn(). Additive API for the editor's undo stack — the other
+   * implementations do not have it yet.
+   */
+  insertColumn(index: number, columnName: string, column: string[]): number {
+    if (index < 0 || index > this._header.length) {
+      return Csv.CSV_COLUMN_NOT_FOUND;
+    }
+    if (column.length !== this._data.length) {
+      return Csv.CSV_COLUMN_SIZE_MISMATCH;
+    }
+    this._header.splice(index, 0, columnName);
+    for (let i = 0; i < this._data.length; i++) {
+      this._data[i][columnName] = String(column[i]);
+    }
+    return Csv.CSV_OK;
+  }
+
   loadFromString(
     csvString: string,
     hasHeader = true,

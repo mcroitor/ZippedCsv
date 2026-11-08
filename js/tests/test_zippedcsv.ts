@@ -187,4 +187,67 @@ describe("ZippedCsv", () => {
 
     fs.rmSync(tmpDir, { recursive: true });
   });
+
+  test("renameCsv keeps the data object and the table order position", () => {
+    const zcsv = new ZippedCsv("");
+    const first = new Csv([["a"], ["1"]]);
+    const second = new Csv([["b"], ["2"]]);
+    const third = new Csv([["c"], ["3"]]);
+    zcsv.addCsv("first", first);
+    zcsv.addCsv("second", second);
+    zcsv.addCsv("third", third);
+
+    zcsv.renameCsv("second", "renamed");
+
+    expect(zcsv.getTableNames()).toEqual(["first.csv", "renamed.csv", "third.csv"]);
+    expect(zcsv.getCsv("renamed.csv")).toBe(second);
+  });
+
+  test("renameCsv normalizes extensions and rejects missing/duplicate names", () => {
+    const zcsv = new ZippedCsv("");
+    zcsv.addCsv("a", new Csv([["x"], ["1"]]));
+    zcsv.addCsv("target", new Csv([["y"], ["2"]]));
+
+    expect(() => zcsv.renameCsv("missing", "other")).toThrow();
+    expect(() => zcsv.renameCsv("a", "target")).toThrow();
+    expect(() => zcsv.renameCsv("a", "sub/dir.csv")).toThrow();
+
+    zcsv.renameCsv("a", "b");
+    expect(zcsv.getTableNames()).toEqual(["b.csv", "target.csv"]);
+    expect(zcsv.getCsv("b.csv").getCell("x", 0)).toBe("1");
+  });
+
+  test("renameCsv accepts a case-only rename", () => {
+    const zcsv = new ZippedCsv("");
+    zcsv.addCsv("Data", new Csv([["x"], ["1"]]));
+
+    zcsv.renameCsv("Data.csv", "data.csv");
+    expect(zcsv.getTableNames()).toEqual(["data.csv"]);
+  });
+
+  test("insertCsvAt restores a table at its original position", () => {
+    const zcsv = new ZippedCsv("");
+    const a = new Csv([["x"], ["1"]]);
+    const b = new Csv([["y"], ["2"]]);
+    zcsv.addCsv("a", a);
+    zcsv.addCsv("b", b);
+
+    zcsv.removeCsv("a");
+    expect(zcsv.getTableNames()).toEqual(["b.csv"]);
+
+    zcsv.insertCsvAt(0, "a", a);
+    expect(zcsv.getTableNames()).toEqual(["a.csv", "b.csv"]);
+    expect(zcsv.getCsv("a.csv")).toBe(a);
+  });
+
+  test("insertCsvAt rejects invalid positions and duplicates", () => {
+    const zcsv = new ZippedCsv("");
+    const csv = new Csv([["x"], ["1"]]);
+
+    expect(() => zcsv.insertCsvAt(-1, "a", csv)).toThrow();
+    expect(() => zcsv.insertCsvAt(10, "a", csv)).toThrow();
+
+    zcsv.insertCsvAt(0, "a", csv);
+    expect(() => zcsv.insertCsvAt(1, "a", csv)).toThrow();
+  });
 });

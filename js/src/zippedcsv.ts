@@ -155,6 +155,58 @@ export class ZippedCsv {
     this._csv.delete(name);
   }
 
+  /**
+   * Rename a table in place: order position and the Csv object are preserved.
+   * The ".csv" extension is added to both arguments when missing. Renaming to
+   * the same (normalised) name is a no-op; a missing source or an existing
+   * target throws.
+   */
+  renameCsv(from: string, to: string): void {
+    const fromName = this._normalizeName(from);
+    const toName = this._normalizeName(to);
+    if (fromName === toName) {
+      return;
+    }
+    if (!ZippedCsv._isRootCsvFile(toName)) {
+      throw new Error(`Only root-level CSV file names are supported: ${to}`);
+    }
+    const csv = this._csv.get(fromName);
+    if (!csv) {
+      throw new Error(`File not found: ${fromName}`);
+    }
+    if (this._csv.has(toName)) {
+      throw new Error(`Duplicate CSV file name: ${toName}`);
+    }
+    this._csv = new Map(
+      [...this._csv.entries()].map(([key, value]) => [
+        key === fromName ? toName : key,
+        value,
+      ])
+    );
+  }
+
+  /**
+   * Add a Csv object at a specific position of the table order (0 or the
+   * current size appends). Additive API for the editor's undo stack so a
+   * deleted table can be restored at its original position — the other
+   * implementations do not have it yet.
+   */
+  insertCsvAt(index: number, fileName: string, csv: Csv): void {
+    const name = this._normalizeName(fileName);
+    if (!ZippedCsv._isRootCsvFile(name)) {
+      throw new Error(`Only root-level CSV file names are supported: ${fileName}`);
+    }
+    if (index < 0 || index > this._csv.size) {
+      throw new Error(`Invalid CSV position: ${index}`);
+    }
+    if (this._csv.has(name)) {
+      throw new Error(`Duplicate CSV file name: ${name}`);
+    }
+    const entries = [...this._csv.entries()];
+    entries.splice(index, 0, [name, csv]);
+    this._csv = new Map(entries);
+  }
+
   save(): void {
     const dir = path.dirname(this._zipFile);
     if (dir && !fs.existsSync(dir)) {
