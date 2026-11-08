@@ -11,8 +11,9 @@ evolved from the read-only viewer.
   adoption; re-verify before any bump).
 - Editing core (#28) is live: cell edits, add/remove rows and columns,
   add/rename/delete tables, document-level undo/redo with per-cell
-  coalescing, and dirty tracking (document + per-table). Persistence
-  (save/open via File System Access API) is issue #29.
+  coalescing, and dirty tracking (document + per-table). Persistence (#29) is
+  live: save via the File System Access API with a download fallback, Save as…,
+  Ctrl+S, and a beforeunload warning. Metadata *editing* UI is issue #30.
 
 ## Commands
 
@@ -58,6 +59,25 @@ evolved from the read-only viewer.
   its original order position.
 - Browser adapter: `addCsv/removeCsv/renameCsv/insertCsvAt` mirroring the node
   semantics (the browser `ZippedCsv` equivalent).
+
+## Persistence (#29)
+
+- Saving goes through a single serialization path: adapter `toBytes()` builds
+  the ZIP from `Csv.toString(...)` per table via JSZip; `metadata.json` is
+  written only after it existed on load or an explicit `setMetadata()` call
+  (issue #16 parity). `updatedAt` and friends are never touched implicitly.
+- Open: dedicated **Open…** button uses `showOpenFilePicker` when available
+  (Chromium) to acquire a write handle for later in-place saves; the classic
+  file input and drag & drop keep working everywhere.
+- Save: an existing handle is overwritten with `createWritable()`. **Save as…**
+  always prompts. Engines without the API receive a `Blob` `a[download]` —
+  built from the same `toBytes()` output, never a parallel writer.
+- Unsaved tracking is content-accurate: `EditorStore.markSaved()` stores an
+  FNV-1a fingerprint of table names + serialized tables + metadata (sync, so
+  `beforeunload` can check it synchronously). Undoing one step past the last
+  save is detected; undoing everything back to the loaded content is not
+  "unsaved". A revoked handle (`NotAllowedError`) surfaces a non-fatal message
+  and keeps the edits in memory.
 
 ## Invariants
 

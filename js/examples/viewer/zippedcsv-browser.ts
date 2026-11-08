@@ -48,6 +48,8 @@ function isRootCsvFile(name: string): boolean {
   );
 }
 
+const METADATA_FILENAME_BROWSER = "metadata.json";
+
 /**
  * Browser-side async adapter for reading .zcsv archives.
  * Uses JSZip for ZIP parsing and Csv.loadFromString() for CSV parsing.
@@ -56,6 +58,7 @@ function isRootCsvFile(name: string): boolean {
 export class ZippedCsvBrowser {
   private _csv: Map<string, Csv> = new Map();
   private _metadata: ZcsvMetadata = defaultMetadata();
+  private _hasMetadataFile = false;
 
   private constructor() {}
 
@@ -69,6 +72,7 @@ export class ZippedCsvBrowser {
     // Read metadata (optional)
     const metaEntry = zip.file("metadata.json");
     if (metaEntry) {
+      instance._hasMetadataFile = true;
       const text = await metaEntry.async("text");
       try {
         const raw: unknown = JSON.parse(text);
@@ -118,8 +122,42 @@ export class ZippedCsvBrowser {
   }
 
   // ── Mutations (editor) ───────────────────────────────────────────────────
-  // Semantics mirror the node ZippedCsv; save() for the adapter lands with
-  // the persistence issue (#29).
+  // Semantics mirror the node ZippedCsv; toBytes() is the single
+  // serialization path for saving (issue #29).
+
+  setMetadata(metadata: Partial<ZcsvMetadata>): void {
+    this._metadata = normalizeMetadata(metadata as Record<string, unknown>);
+    this._hasMetadataFile = true;
+  }
+
+  hasMetadataFile(): boolean {
+    return this._hasMetadataFile;
+  }
+
+  /**
+   * Serializes the archive through the library: every table via
+   * `Csv.toString(...)` with the metadata settings; metadata.json is included
+   * only after it existed on load or a setMetadata call (issue #16 parity).
+   * `updatedAt` and friends are never touched implicitly.
+   */
+  async toBytes(): Promise<Uint8Array> {
+    const zip = new JSZip();
+    for (const [name, csv] of this._csv) {
+      const content = csv.toString(
+        this._metadata.hasHeader,
+        this._metadata.delimiter,
+        this._metadata.quoteChar
+      );
+      zip.file(name, content);
+    }
+    if (this._hasMetadataFile) {
+      zip.file(
+        METADATA_FILENAME_BROWSER,
+        JSON.stringify(this._metadata, null, 2)
+      );
+    }
+    return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
+  }
 
   addCsv(fileName: string, csv: Csv): void {
     const name = ZippedCsvBrowser._normalizeFilename(fileName);
