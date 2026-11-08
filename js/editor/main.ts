@@ -31,10 +31,58 @@ const btnRemoveColumn = document.getElementById("btn-remove-column") as HTMLButt
 const btnAddTable = document.getElementById("btn-add-table") as HTMLButtonElement;
 const btnRenameTable = document.getElementById("btn-rename-table") as HTMLButtonElement;
 const btnRemoveTable = document.getElementById("btn-remove-table") as HTMLButtonElement;
+const btnOpen = document.getElementById("btn-open") as HTMLButtonElement;
+const btnSave = document.getElementById("btn-save") as HTMLButtonElement;
+const btnSaveAs = document.getElementById("btn-save-as") as HTMLButtonElement;
+const saveStatus = document.getElementById("save-status") as HTMLSpanElement;
 
 let store: EditorStore | null = null;
 let activeGrid: GridApi | null = null;
 let activeTableName: string | null = null;
+let fileHandle: EditorFileHandle | null = null;
+let saveStatusTimer: number | null = null;
+
+// ── File System Access (feature-detected; not in every engine) ────────────
+
+interface EditorWritable {
+  write(data: BufferSource | Blob): Promise<void>;
+  close(): Promise<void>;
+}
+
+interface EditorFileHandle {
+  readonly name: string;
+  getFile(): Promise<File>;
+  createWritable(): Promise<EditorWritable>;
+}
+
+interface PickerOptionsStruct {
+  suggestedName?: string;
+  multiple?: boolean;
+  types?: { description?: string; accept: Record<string, string[]> }[];
+}
+
+interface FsAccessWindow {
+  showOpenFilePicker?(options?: PickerOptionsStruct): Promise<EditorFileHandle[]>;
+  showSaveFilePicker?(options?: PickerOptionsStruct): Promise<EditorFileHandle>;
+}
+
+const SAVE_TYPES: PickerOptionsStruct["types"] = [
+  {
+    description: "Zipped CSV archive",
+    accept: { "application/zip": [".zcsv", ".csv.zip"] },
+  },
+];
+
+function setStatus(message: string): void {
+  saveStatus.textContent = message;
+  if (saveStatusTimer !== null) {
+    window.clearTimeout(saveStatusTimer);
+  }
+  saveStatusTimer = window.setTimeout(() => {
+    saveStatus.textContent = "";
+    saveStatusTimer = null;
+  }, 4000);
+}
 
 fileInput.addEventListener("change", async () => {
   const file = fileInput.files?.[0];
@@ -58,13 +106,18 @@ dropZone.addEventListener("drop", async (event) => {
   }
 });
 
-async function openFile(file: File): Promise<void> {
+async function openFile(file: File, handle: EditorFileHandle | null = null): Promise<void> {
   clearUI();
   try {
     store = await EditorStore.load(file, { onEvent: onStoreEvent });
+    fileHandle = handle;
+    // Baseline for unsaved tracking: freshly loaded, nothing to save yet.
+    store.markSaved();
+
     document.title = `Zipped CSV Editor — ${file.name}`;
     renderMetadata(store.metadata);
     renderTabs();
+    setStatus("Opened.");
   } catch (err) {
     showError(`Failed to read file: ${err}`);
   }
@@ -80,6 +133,8 @@ function clearUI(): void {
   closeGrid();
   activeTableName = null;
   store = null;
+  fileHandle = null;
+  saveStatus.textContent = "";
   document.title = "Zipped CSV Editor";
 }
 
@@ -227,6 +282,9 @@ function updateToolbar(): void {
   btnRemoveColumn.disabled = !activeTableName;
   btnRenameTable.disabled = !activeTableName;
   btnRemoveTable.disabled = !activeTableName;
+  const unsaved = store.hasUnsavedChanges();
+  btnSave.disabled = !unsaved;
+  btnSaveAs.disabled = !unsaved; // identical command until content changes
 }
 
 // ── Store events ───────────────────────────────────────────────────────────
@@ -387,5 +445,148 @@ window.addEventListener("keydown", (event) => {
   activeGrid?.stopEditing();
   if (isUndo ? !store.undo() : !store.redo()) {
     // Nothing to do — ignore silently in the keyboard path.
+  }
+});
+
+// ── Persistence (issue #29) ───────────────────────────────────────────────
+
+async function writeToFileHandle(handle: EditorFileHandle, bytes: Uint8Array): Promise<void> {
+  const writable = await handle.createWritable();
+  try {
+    await writable.write(new Uint8Array(bytes));
+    await writable.close();
+  } catch (err) {
+    // Best effort: a failed close must not swallow the original error, but a
+    // half-written file should not linger as "saved".
+    throw err;
+  }
+}
+
+async function saveOrSaveAs(): Promise<void> {
+  if (!store) {
+    showError("Open an archive first.");
+    return;
+  }
+  if (fileHandle) {
+    try {
+      const bytes = await store.toBytes();
+      await writeToFileHandle(fileHandle, bytes);
+      store.markSaved();
+      setStatus(`Saved ✓ ${fileHandle.name}`);
+      updateToolbar();
+      return;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        // Revoked handle: non-fatal — edits stay in memory; Save as… continues.
+        showError("The file handle lost write permission — use “Save as…”.");
+        return;
+      }
+      showError(`Save failed: ${err}`);
+      return;
+    }
+  }
+  await saveAs();
+}
+
+async function saveAs(): Promise<void> {
+  if (!store) {
+    showError("Open an archive first.");
+    return;
+  }
+  const bytes = await store.toBytes();
+  const w = window as unknown as FsAccessWindow;
+
+  if (typeof w.showSaveFilePicker === "function") {
+    try {
+      const handle = await w.showSaveFilePicker({
+        suggestedName: store.fileName,
+        types: SAVE_TYPES,
+      });
+      if (!handle) {
+        setStatus("Save cancelled.");
+        return;
+      }
+      await writeToFileHandle(handle, bytes);
+      fileHandle = handle;
+      store.markSaved();
+      setStatus(`Saved ✓ ${handle.name}`);
+      updateToolbar();
+      return;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setStatus("Save cancelled.");
+        return;
+      }
+      // Fall through to the download fallback for other picker failures.
+      showError(`“Save as…” fell back to a download: ${err}`);
+    }
+  }
+
+  // Download fallback (Firefox/Safari; also after unexpected picker errors).
+  downloadBytes(bytes, store.fileName);
+  store.markSaved();
+  setStatus(`Downloaded ✓ ${store.fileName}`);
+  updateToolbar();
+}
+
+function downloadBytes(bytes: Uint8Array, fileName: string): void {
+  const blob = new Blob([new Uint8Array(bytes)], { type: "application/zip" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+btnSave.addEventListener("click", () => {
+  void saveOrSaveAs();
+});
+
+btnSaveAs.addEventListener("click", () => {
+  void saveAs();
+});
+
+btnOpen.addEventListener("click", async () => {
+  const w = window as unknown as FsAccessWindow;
+  if (typeof w.showOpenFilePicker === "function") {
+    try {
+      const [handle] = await w.showOpenFilePicker({
+        multiple: false,
+        types: SAVE_TYPES,
+      });
+      if (!handle) {
+        return;
+      }
+      const file = await handle.getFile();
+      await openFile(file, handle);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
+      showError(`Open failed: ${err}`);
+    }
+    return;
+  }
+  // Engines without the picker keep the classic input.
+  fileInput.click();
+});
+
+window.addEventListener("keydown", (event) => {
+  if (!store) return;
+  if (!(event.ctrlKey || event.metaKey)) return;
+  if (event.key.toLowerCase() !== "s") return;
+  event.preventDefault();
+  activeGrid?.stopEditing();
+  void saveOrSaveAs();
+});
+
+window.addEventListener("beforeunload", (event) => {
+  if (store?.hasUnsavedChanges()) {
+    // Synchronous epoch comparison — no async hashing here.
+    event.preventDefault();
+    event.returnValue = "";
   }
 });

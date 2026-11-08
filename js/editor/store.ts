@@ -47,6 +47,8 @@ export class EditorStore {
   readonly fileName: string;
   readonly tables = new Map<string, EditorTable>();
   private readonly dirtyCounts = new Map<string, number>();
+  /** Fingerprint of the content at the last successful save (or load). */
+  private savedChecksum: string;
   private readonly stack: UndoStack;
   private hooks: StoreHooks;
 
@@ -65,6 +67,8 @@ export class EditorStore {
     for (const name of archive.getTableNames()) {
       this.tables.set(name, buildMirror(name, archive.getCsv(name)));
     }
+
+    this.savedChecksum = contentFingerprint(this.archive);
   }
 
   static async load(file: File, hooks: StoreHooks): Promise<EditorStore> {
@@ -107,6 +111,33 @@ export class EditorStore {
   serializeTable(name: string): string {
     const meta = this.metadata;
     return this.archive.getCsv(name).toString(meta.hasHeader, meta.delimiter, meta.quoteChar);
+  }
+
+  /** Single serialization path for saving (issue #29). */
+  toBytes(): Promise<Uint8Array> {
+    return this.archive.toBytes();
+  }
+
+  /** true when the loaded archive already contained metadata.json. */
+  hasMetadataFile(): boolean {
+    return this.archive.hasMetadataFile();
+  }
+
+  /**
+   * Record that the current content matches the file on disk. The stored
+   * fingerprint makes "unsaved" tracking content-accurate: undoing one step
+   * PAST the last save is detected even though the history is not empty.
+   */
+  markSaved(): void {
+    this.savedChecksum = contentFingerprint(this.archive);
+  }
+
+  hasUnsavedChanges(): boolean {
+    return this.fingerprint() !== this.savedChecksum;
+  }
+
+  private fingerprint(): string {
+    return contentFingerprint(this.archive);
   }
 
   // ── Undo / redo ──────────────────────────────────────────────────────────
@@ -482,4 +513,28 @@ function rebuildRename(
   return new Map(
     [...tables.entries()].map(([key, value]) => (key === from ? [to, value] : [key, value]))
   );
+}
+
+/**
+ * Content fingerprint for saved-accurate change detection: table names,
+ * serialized tables (library paths) and the metadata settings. Sync by design
+ * so beforeunload and toolbar states can check it without async work.
+ */
+function contentFingerprint(archive: ZippedCsvBrowser): string {
+  const encoder = new TextEncoder();
+  const parts: string[] = [];
+  for (const name of archive.getTableNames()) {
+    parts.push(name);
+    parts.push(archive.getCsv(name).toString());
+  }
+  parts.push(JSON.stringify(archive.getMetadata()));
+  parts.push(archive.hasMetadataFile() ? "metadata:1" : "metadata:0");
+
+  // FNV-1a 32-bit over the UTF-8 bytes.
+  let hash = 0x811c9dc5;
+  for (const byte of encoder.encode(parts.join("\u0000"))) {
+    hash ^= byte;
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }

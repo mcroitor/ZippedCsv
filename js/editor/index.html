@@ -177,6 +177,27 @@
         max-width: 12rem;
       }
 
+      #save-status {
+        color: #047857;
+        font-size: 0.78rem;
+        font-weight: 500;
+      }
+
+      #btn-open {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        color: #374151;
+      }
+
+      #btn-open:hover {
+        border-color: #2563eb;
+        color: #2563eb;
+      }
+
       #grid-container {
         padding: 1rem 1.25rem 1.25rem;
         height: 480px;
@@ -194,8 +215,9 @@
       <h1>Zipped CSV Editor</h1>
 
       <div class="upload-card" id="drop-zone">
-        <label for="file-input">Open .zcsv file</label>
+        <label for="file-input">Select .zcsv file</label>
         <input type="file" id="file-input" accept=".zcsv,.zip" />
+        <button id="btn-open">Open…</button>
       </div>
 
       <div id="error" hidden></div>
@@ -217,6 +239,10 @@
           <button id="btn-add-table">New table</button>
           <button id="btn-rename-table">Rename table</button>
           <button id="btn-remove-table">Delete table</button>
+          <span class="sep"></span>
+          <button id="btn-save" disabled>💾 Save</button>
+          <button id="btn-save-as" disabled>💾 Save as…</button>
+          <span id="save-status"></span>
         </div>
         <div id="grid-container"></div>
       </div>
